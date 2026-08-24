@@ -1,0 +1,187 @@
+-- Lab 2: RELATIONAL MODEL DEMONSTRATION
+USE OTT_PLATFORM;
+
+-- Users Table
+CREATE TABLE USERS (
+    User_ID INT PRIMARY KEY,
+    Name VARCHAR(50) NOT NULL,
+    Email VARCHAR(100) UNIQUE NOT NULL,
+    Joined_Date DATE DEFAULT (CURRENT_DATE)
+);
+SELECT * FROM USERS;
+
+-- Subscription_Plans Table
+CREATE TABLE SUBSCRIPTION_PLANS (
+    Plan_ID INT PRIMARY KEY,
+    Plan_Name VARCHAR(50) NOT NULL,
+    Quality VARCHAR(20),
+    Price DECIMAL(10,2) CHECK (Price > 0)
+);
+
+-- User_Subscriptions Table
+CREATE TABLE USER_SUBSCRIPTIONS (
+    Sub_ID INT PRIMARY KEY,
+    User_ID INT NOT NULL,
+    Plan_ID INT NOT NULL,
+    Status VARCHAR(20) DEFAULT 'Active',
+
+    FOREIGN KEY (User_ID)
+    REFERENCES USERS(User_ID)
+    ON UPDATE CASCADE
+    ON DELETE CASCADE,
+
+    FOREIGN KEY (Plan_ID)
+    REFERENCES SUBSCRIPTION_PLANS(Plan_ID)
+    ON UPDATE CASCADE
+    ON DELETE CASCADE
+);
+
+-- Content Table
+CREATE TABLE CONTENT (
+    Content_ID INT PRIMARY KEY,
+    Title VARCHAR(100) NOT NULL,
+    Genre VARCHAR(50),
+    Type VARCHAR(20)
+);
+
+-- Watch_History Table
+CREATE TABLE WATCH_HISTORY (
+    History_ID INT PRIMARY KEY,
+    User_ID INT NOT NULL,
+    Content_ID INT NOT NULL,
+    Watched_On DATE NOT NULL,
+
+    FOREIGN KEY (User_ID)
+    REFERENCES USERS(User_ID)
+    ON UPDATE CASCADE
+    ON DELETE CASCADE,
+
+    FOREIGN KEY (Content_ID)
+    REFERENCES CONTENT(Content_ID)
+    ON UPDATE CASCADE
+    ON DELETE CASCADE
+);
+
+-- Payment Table
+CREATE TABLE PAYMENT (
+    Payment_ID INT PRIMARY KEY,
+    User_ID INT NOT NULL,
+    Sub_ID INT NOT NULL,
+    Amount DECIMAL(10,2) CHECK (Amount > 0),
+    Paid_On DATE NOT NULL,
+
+    FOREIGN KEY (User_ID)
+    REFERENCES USERS(User_ID)
+    ON UPDATE CASCADE
+    ON DELETE CASCADE,
+
+    FOREIGN KEY (Sub_ID)
+    REFERENCES USER_SUBSCRIPTIONS(Sub_ID)
+    ON UPDATE CASCADE
+    ON DELETE CASCADE
+);
+
+
+-- 2. DEMONSTRATION OF CONSTRAINT ENFORCEMENT
+
+-- PRIMARY KEY CONSTRAINT
+INSERT INTO USERS (User_ID, Name, Email, Phone)
+VALUES
+(101, 'Rahul', 'rahul@gmail.com', '9876543210');
+-- Error Code: 1062. Duplicate entry '101' for key 'users.PRIMARY'
+
+-- NOT NULL
+INSERT INTO USERS(User_ID,Email)
+VALUES(102,'test@gmail.com');
+-- Error Code: 1364. Field 'Name' doesn't have a default value
+
+-- UNIQUE CONSTRAINT
+SELECT * FROM USERS;
+
+INSERT INTO USERS
+(User_ID, Name, Email, Joined_Date)
+VALUES
+(103,'Priya','anu@gmail.com','2025-06-14');
+-- Error Code: 1062. Duplicate entry '103' for key 'users.PRIMARY'
+
+-- CHECK CONSTRAINT
+INSERT INTO SUBSCRIPTION_PLANS
+VALUES(2,'Basic','HD',-500);
+-- Error Code: 3819. Check constraint 'subscription_plans_chk_1' is violated.
+
+-- FOREIGN KEY CONSTRAINT
+INSERT INTO USER_SUBSCRIPTIONS
+VALUES(202,999,1,'Active');
+-- Error Code: 1452. Cannot add or update a child row: a foreign key constraint fails ('ott_platform'.'user_subscripti...')
+
+-- DEFAULT CONSTRAINT
+INSERT INTO USER_SUBSCRIPTIONS
+(Sub_ID, User_ID, Plan_ID)
+VALUES
+(301,101,1);
+SHOW CREATE TABLE USER_SUBSCRIPTIONS;
+
+INSERT INTO USER_SUBSCRIPTIONS
+(Sub_ID, User_ID, Plan_ID)
+VALUES
+(401,101,1);
+
+SELECT * FROM USER_SUBSCRIPTIONS;
+
+-- ============================
+-- 3. ALTER TABLE
+-- ============================
+ALTER TABLE USERS
+ADD Phone VARCHAR(10);
+DESC USERS;
+
+-- ============================
+-- 4. LISTING CONSTRAINTS
+-- ============================
+SELECT
+TABLE_NAME,
+CONSTRAINT_NAME,
+CONSTRAINT_TYPE
+FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS
+WHERE TABLE_SCHEMA='ott_platform';
+
+-- ============================
+-- 5. DROPPING A CONSTRAINT
+-- ============================
+SHOW INDEX FROM USERS;
+-- (UNIQUE constraint on Email column was dropped)
+
+-- ============================
+-- 6. DATA INTEGRITY MAINTENANCE
+-- ============================
+
+-- UPDATE CASCADE
+SELECT * FROM USERS;
+SELECT * FROM USER_SUBSCRIPTIONS;
+--BEFORE UPDATE
+
+UPDATE USERS
+SET User_ID = 111
+WHERE User_ID = 101;
+SELECT * FROM USER_SUBSCRIPTIONS;
+
+-- DELETE CASCADE
+DELETE FROM USERS
+WHERE User_ID = 111;
+SELECT * FROM USER_SUBSCRIPTIONS;
+SELECT * FROM PAYMENT;
+SELECT * FROM WATCH_HISTORY;
+
+-- ============================
+-- 7. DROP AND TRUNCATE COMMANDS
+-- ============================
+
+-- TRUNCATE TABLE
+SELECT * FROM CONTENT;
+
+TRUNCATE TABLE CONTENT;
+SELECT * FROM CONTENT;
+
+-- DROP TABLE
+DROP TABLE WATCH_HISTORY;
+SHOW TABLES;
